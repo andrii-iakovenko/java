@@ -18,7 +18,6 @@ import com.pubnub.api.models.consumer.pubsub.PNPresenceEventResult;
 import com.pubnub.api.models.server.PresenceEnvelope;
 import com.pubnub.api.models.server.PublishMetaData;
 import com.pubnub.api.models.server.SubscribeMessage;
-import com.pubnub.api.vendor.Crypto;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -67,11 +66,10 @@ public class SubscribeMessageWorker implements Runnable {
 
     private JsonElement processMessage(JsonElement input) {
         // if we do not have a crypto key, there is no way to process the node; let's return.
-        if (pubnub.getConfiguration().getCipherKey() == null) {
+        if (!pubnub.getMessageCipher().isActive()) {
             return input;
         }
 
-        Crypto crypto = new Crypto(pubnub.getConfiguration().getCipherKey());
         MapperManager mapper = this.pubnub.getMapper();
         String inputText;
         String outputText;
@@ -84,7 +82,7 @@ public class SubscribeMessageWorker implements Runnable {
         }
 
         try {
-            outputText = crypto.decrypt(inputText);
+            outputText = pubnub.getMessageCipher().decrypt(inputText);
         } catch (PubNubException e) {
             PNStatus pnStatus = PNStatus.builder().error(true)
                     .errorData(new PNErrorData(e.getMessage(), e))

@@ -5,6 +5,8 @@ import com.pubnub.api.builder.PubNubErrorBuilder;
 import com.pubnub.api.builder.SubscribeBuilder;
 import com.pubnub.api.builder.UnsubscribeBuilder;
 import com.pubnub.api.callbacks.SubscribeCallback;
+import com.pubnub.api.encryption.AesMessageCipher;
+import com.pubnub.api.encryption.MessageCipher;
 import com.pubnub.api.endpoints.DeleteMessages;
 import com.pubnub.api.endpoints.FetchMessages;
 import com.pubnub.api.endpoints.History;
@@ -59,17 +61,25 @@ public class PubNub {
 
     private RetrofitManager retrofitManager;
 
+    @Getter
+    private MessageCipher messageCipher;
+
     private static final int TIMESTAMP_DIVIDER = 1000;
     private static final int MAX_SEQUENCE = 65535;
 
     private static final String SDK_VERSION = "4.18.0";
 
     public PubNub(PNConfiguration initialConfig) {
+        this(initialConfig, new AesMessageCipher(initialConfig));
+    }
+
+    public PubNub(PNConfiguration initialConfig, MessageCipher cipher) {
         this.configuration = initialConfig;
         this.mapper = new MapperManager();
         this.telemetryManager = new TelemetryManager();
         this.basePathManager = new BasePathManager(initialConfig);
         this.retrofitManager = new RetrofitManager(this);
+        this.messageCipher = cipher;
         this.subscriptionManager = new SubscriptionManager(this, retrofitManager, this.telemetryManager);
         this.publishSequenceManager = new PublishSequenceManager(MAX_SEQUENCE);
         instanceId = UUID.randomUUID().toString();

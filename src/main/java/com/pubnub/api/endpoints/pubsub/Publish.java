@@ -11,7 +11,6 @@ import com.pubnub.api.managers.PublishSequenceManager;
 import com.pubnub.api.managers.RetrofitManager;
 import com.pubnub.api.managers.TelemetryManager;
 import com.pubnub.api.models.consumer.PNPublishResult;
-import com.pubnub.api.vendor.Crypto;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import retrofit2.Call;
@@ -104,15 +103,14 @@ public class Publish extends Endpoint<List<Object>, PNPublishResult> {
             params.put("norep", "true");
         }
 
-        if (this.getPubnub().getConfiguration().getCipherKey() != null) {
-            Crypto crypto = new Crypto(this.getPubnub().getConfiguration().getCipherKey());
-            stringifiedMessage = crypto.encrypt(stringifiedMessage).replace("\n", "");
+        if (this.getPubnub().getMessageCipher().isActive()) {
+            stringifiedMessage = this.getPubnub().getMessageCipher().encrypt(this.channel, stringifiedMessage).replace("\n", "");
         }
 
         if (usePOST != null && usePOST) {
             Object payloadToSend;
 
-            if (this.getPubnub().getConfiguration().getCipherKey() != null) {
+            if (this.getPubnub().getMessageCipher().isActive()) {
                 payloadToSend = stringifiedMessage;
             } else {
                 payloadToSend = message;
@@ -123,7 +121,7 @@ public class Publish extends Endpoint<List<Object>, PNPublishResult> {
                     channel, payloadToSend, params);
         } else {
 
-            if (this.getPubnub().getConfiguration().getCipherKey() != null) {
+            if (this.getPubnub().getMessageCipher().isActive()) {
                 stringifiedMessage = "\"".concat(stringifiedMessage).concat("\"");
             }
 
